@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from sqlmodel import Session, select
 
 from database import engine
@@ -37,3 +37,16 @@ def search_memories(q: str = Query(...)):
         ).all()
 
         return memories
+    
+@router.get("/memory/{memory_id}")
+def get_memory(memory_id: int):
+    with Session(engine) as session:
+        memory = session.get(Memory, memory_id)
+
+        if not memory:
+            raise HTTPException(
+                status_code=404,
+                detail="Memory not found"
+            )
+
+        return memory
