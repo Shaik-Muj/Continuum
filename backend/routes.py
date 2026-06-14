@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from sqlmodel import Session
+from fastapi import APIRouter, Query
+from sqlmodel import Session, select
 
 from database import engine
 from models import Memory
@@ -15,3 +15,25 @@ def create_memory(memory: Memory):
         session.refresh(memory)
 
         return memory
+
+
+@router.get("/memory")
+def get_memories():
+    with Session(engine) as session:
+        memories = session.exec(
+            select(Memory)
+        ).all()
+
+        return memories
+
+
+@router.get("/search")
+def search_memories(q: str = Query(...)):
+    with Session(engine) as session:
+        memories = session.exec(
+            select(Memory).where(
+                Memory.content.contains(q)
+            )
+        ).all()
+
+        return memories
