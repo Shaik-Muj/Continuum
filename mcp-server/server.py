@@ -1,33 +1,28 @@
 from mcp.server.fastmcp import FastMCP
-import requests
+
+import continuum_client
 
 mcp = FastMCP("Continuum")
-
-BASE_URL = "http://127.0.0.1:8000"
-
-
-@mcp.tool()
-def search_memory(query: str):
-    response = requests.get(
-        f"{BASE_URL}/search",
-        params={"q": query}
-    )
-
-    return response.json()
 
 
 @mcp.tool()
 def store_memory(content: str, source: str):
-    response = requests.post(
-        f"{BASE_URL}/memory",
-        json={
-            "user_id": "demo-id",
-            "content": content,
-            "source": source
-        }
-    )
+    return continuum_client.store_memory(content, source)
 
-    return response.json()
+
+@mcp.tool()
+def search_memory(query: str):
+    return continuum_client.search_memory(query)
+
+
+@mcp.tool()
+def get_memories():
+    return continuum_client.get_memories()
+
+
+@mcp.tool()
+def get_memory(memory_id: int):
+    return continuum_client.get_memory(memory_id)
 
 
 if __name__ == "__main__":
