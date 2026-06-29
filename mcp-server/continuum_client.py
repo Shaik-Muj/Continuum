@@ -39,3 +39,10 @@ def get_memory(memory_id: int):
     )
 
     return response.json()
+
+def delete_memory(memory_id: int):
+    response = requests.delete(
+        f"{BASE_URL}/memory/{memory_id}"
+    )
+
+    return response.json()

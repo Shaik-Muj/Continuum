@@ -50,3 +50,21 @@ def get_memory(memory_id: int):
             )
 
         return memory
+    
+@router.delete("/memory/{memory_id}")
+def delete_memory(memory_id: int):
+    with Session(engine) as session:
+        memory = session.get(Memory, memory_id)
+
+        if memory is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Memory not found"
+            )
+
+        session.delete(memory)
+        session.commit()
+
+        return {
+            "message": f"Memory {memory_id} deleted successfully"
+        }

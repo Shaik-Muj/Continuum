@@ -24,6 +24,10 @@ def get_memories():
 def get_memory(memory_id: int):
     return continuum_client.get_memory(memory_id)
 
+@mcp.tool()
+def delete_memory(memory_id: int):
+    return continuum_client.delete_memory(memory_id)
+
 
 if __name__ == "__main__":
     mcp.run()
