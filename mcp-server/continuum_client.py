@@ -3,6 +3,19 @@ import requests
 BASE_URL = "http://127.0.0.1:8000"
 
 
+def _handle_response(response):
+    """
+    Returns a consistent response for both success and failure.
+    """
+    if response.ok:
+        return response.json()
+
+    return {
+        "status_code": response.status_code,
+        "error": response.json()
+    }
+
+
 def store_memory(content: str, source: str):
     response = requests.post(
         f"{BASE_URL}/memory",
@@ -13,7 +26,7 @@ def store_memory(content: str, source: str):
         }
     )
 
-    return response.json()
+    return _handle_response(response)
 
 
 def search_memory(query: str):
@@ -22,7 +35,7 @@ def search_memory(query: str):
         params={"q": query}
     )
 
-    return response.json()
+    return _handle_response(response)
 
 
 def get_memories():
@@ -30,7 +43,7 @@ def get_memories():
         f"{BASE_URL}/memory"
     )
 
-    return response.json()
+    return _handle_response(response)
 
 
 def get_memory(memory_id: int):
@@ -38,11 +51,12 @@ def get_memory(memory_id: int):
         f"{BASE_URL}/memory/{memory_id}"
     )
 
-    return response.json()
+    return _handle_response(response)
+
 
 def delete_memory(memory_id: int):
     response = requests.delete(
         f"{BASE_URL}/memory/{memory_id}"
     )
 
-    return response.json()
+    return _handle_response(response)
