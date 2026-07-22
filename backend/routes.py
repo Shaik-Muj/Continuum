@@ -4,6 +4,9 @@ from sqlmodel import Session, select
 from database import engine
 from models import Memory
 
+from security import hash_password
+from models import User, UserRegister
+
 router = APIRouter()
 
 
@@ -68,3 +71,21 @@ def delete_memory(memory_id: int):
         return {
             "message": f"Memory {memory_id} deleted successfully"
         }
+
+
+@router.post("/register")
+def register(user: UserRegister):
+
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hash_password(user.password)
+    )
+
+    with Session(engine) as session:
+
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
+
+        return db_user
