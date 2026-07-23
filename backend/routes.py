@@ -1,15 +1,25 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+
 from sqlmodel import Session, select
 
 from database import engine
-from models import Memory, UserLogin, Token
+from models import (
+    Memory,
+    User,
+    UserRegister,
+    Token,
+)
 
 from security import hash_password, verify_password
-from models import User, UserRegister
-from auth import create_access_token
+from auth import create_access_token, get_current_user
 
 router = APIRouter()
 
+
+# ----------------------------
+# Memory Endpoints
+# ----------------------------
 
 @router.post("/memory")
 def create_memory(memory: Memory):
@@ -22,7 +32,9 @@ def create_memory(memory: Memory):
 
 
 @router.get("/memory")
-def get_memories():
+def get_memories(
+    current_user: User = Depends(get_current_user)
+):
     with Session(engine) as session:
         memories = session.exec(
             select(Memory)
@@ -41,20 +53,22 @@ def search_memories(q: str = Query(...)):
         ).all()
 
         return memories
-    
+
+
 @router.get("/memory/{memory_id}")
 def get_memory(memory_id: int):
     with Session(engine) as session:
         memory = session.get(Memory, memory_id)
 
-        if not memory:
+        if memory is None:
             raise HTTPException(
                 status_code=404,
                 detail="Memory not found"
             )
 
         return memory
-    
+
+
 @router.delete("/memory/{memory_id}")
 def delete_memory(memory_id: int):
     with Session(engine) as session:
@@ -74,6 +88,10 @@ def delete_memory(memory_id: int):
         }
 
 
+# ----------------------------
+# Authentication
+# ----------------------------
+
 @router.post("/register")
 def register(user: UserRegister):
 
@@ -84,42 +102,54 @@ def register(user: UserRegister):
     )
 
     with Session(engine) as session:
-
         session.add(db_user)
         session.commit()
         session.refresh(db_user)
 
         return db_user
 
-@router.post("/login", response_model=Token)
-def login(user: UserLogin):
 
+@router.post("/login", response_model=Token)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
     with Session(engine) as session:
 
+        print("Received username:", repr(form_data.username))
+        print("Received password:", repr(form_data.password))
+
+        email = form_data.username.strip()
+
         db_user = session.exec(
-            select(User).where(User.email == user.email)
+        select(User).where(User.email == email)
         ).first()
 
-        if not db_user:
+        print("User found:", db_user)
+
+        if db_user is None:
             raise HTTPException(
                 status_code=401,
-                detail="Invalid email or password"
+                detail="User not found"
             )
 
-        if not verify_password(
-            user.password,
+        password_ok = verify_password(
+            form_data.password,
             db_user.hashed_password
-        ):
+        )
+
+        print("Password OK:", password_ok)
+
+        if not password_ok:
             raise HTTPException(
                 status_code=401,
-                detail="Invalid email or password"
+                detail="Password incorrect"
             )
 
         access_token = create_access_token(
             {"sub": db_user.email}
         )
 
-        return {
-            "access_token": access_token,
-            "token_type": "bearer"
-        }
+        return Token(
+            access_token=access_token,
+            token_type="bearer"
+        )
