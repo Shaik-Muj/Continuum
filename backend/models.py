@@ -16,6 +16,10 @@ class UserRegister(SQLModel):
     email: str
     password: str
 
+class UserLogin(SQLModel):
+    email: str
+    password: str
+
 
 class Memory(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
