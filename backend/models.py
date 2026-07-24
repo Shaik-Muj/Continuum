@@ -30,6 +30,10 @@ class Memory(SQLModel, table=True):
 
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
+class MemoryCreate(SQLModel):
+    content: str
+    source: str
+
 class Token(SQLModel):
     access_token: str
     token_type: str

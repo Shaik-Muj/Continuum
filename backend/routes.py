@@ -9,6 +9,7 @@ from models import (
     User,
     UserRegister,
     Token,
+    MemoryCreate,
 )
 
 from security import hash_password, verify_password
@@ -22,13 +23,22 @@ router = APIRouter()
 # ----------------------------
 
 @router.post("/memory")
-def create_memory(memory: Memory):
-    with Session(engine) as session:
-        session.add(memory)
-        session.commit()
-        session.refresh(memory)
+def create_memory(
+    memory: MemoryCreate,
+    current_user: User = Depends(get_current_user)
+):
+    db_memory = Memory(
+        content=memory.content,
+        source=memory.source,
+        user_id=current_user.id
+    )
 
-        return memory
+    with Session(engine) as session:
+        session.add(db_memory)
+        session.commit()
+        session.refresh(db_memory)
+
+        return db_memory
 
 
 @router.get("/memory")
@@ -37,7 +47,9 @@ def get_memories(
 ):
     with Session(engine) as session:
         memories = session.exec(
-            select(Memory)
+            select(Memory).where(
+                Memory.user_id == current_user.id
+            )
         ).all()
 
         return memories
