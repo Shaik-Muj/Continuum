@@ -68,8 +68,12 @@ def search_memories(q: str = Query(...)):
 
 
 @router.get("/memory/{memory_id}")
-def get_memory(memory_id: int):
+def get_memory(
+    memory_id: int,
+    current_user: User = Depends(get_current_user)
+):
     with Session(engine) as session:
+
         memory = session.get(Memory, memory_id)
 
         if memory is None:
@@ -78,18 +82,34 @@ def get_memory(memory_id: int):
                 detail="Memory not found"
             )
 
+        if memory.user_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied"
+            )
+
         return memory
 
 
 @router.delete("/memory/{memory_id}")
-def delete_memory(memory_id: int):
+def delete_memory(
+    memory_id: int,
+    current_user: User = Depends(get_current_user)
+):
     with Session(engine) as session:
+
         memory = session.get(Memory, memory_id)
 
         if memory is None:
             raise HTTPException(
                 status_code=404,
                 detail="Memory not found"
+            )
+
+        if memory.user_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied"
             )
 
         session.delete(memory)
