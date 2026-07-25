@@ -2,3 +2,5 @@
 # Python virtual environment
 .continuum/
 backend/.continuum/
+# .env file
+.env
