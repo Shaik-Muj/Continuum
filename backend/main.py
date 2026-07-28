@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI
 
 from database import create_db_and_tables
