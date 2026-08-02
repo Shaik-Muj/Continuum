@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from database import engine
 from models import User
-from config import settings
+from core.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
