@@ -7,3 +7,5 @@ backend/.continuum/
 # py cache
 __pycache__/
 *.py[cod]
+# Runtime data
+data/
