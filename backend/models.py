@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-
 from sqlmodel import SQLModel, Field
+from pydantic import BaseModel
 
 
 class User(SQLModel, table=True):
@@ -38,3 +38,12 @@ class MemoryCreate(SQLModel):
 class Token(SQLModel):
     access_token: str
     token_type: str
+
+
+class SearchResult(BaseModel):
+    """
+    Represents a semantic search result.
+    """
+
+    memory_id: int
+    score: float
