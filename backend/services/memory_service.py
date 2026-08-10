@@ -40,6 +40,7 @@ def create_memory(
     # Store the embedding in ChromaDB
     store_embedding(
         memory_id=db_memory.id,
+        user_id=user_id,
         text=db_memory.content
     )
 
@@ -72,6 +73,7 @@ def get_user_memories(
 
 def search_memories(
     q: str,
+    user_id: int,
     session: Session
 ) -> list[Memory]:
     """
@@ -85,7 +87,10 @@ def search_memories(
         List of semantically similar memories.
     """
 
-    search_results = find_similar_memories(q)
+    search_results = find_similar_memories(
+    query=q,
+    user_id=user_id
+)
 
     memories = []
 

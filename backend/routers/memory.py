@@ -52,6 +52,7 @@ def get_memories(
 @router.get("/search", response_model=list[Memory])
 def search_memory_endpoint(
     q: str = Query(...),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """
@@ -59,7 +60,11 @@ def search_memory_endpoint(
     
     - **q**: Search query string
     """
-    return search_memories(q, session)
+    return search_memories(
+    q,
+    current_user.id,
+    session
+)
 
 
 @router.get("/memory/{memory_id}", response_model=Memory)
