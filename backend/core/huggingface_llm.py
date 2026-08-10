@@ -14,11 +14,14 @@ class HuggingFaceLLM(LLM):
     def __init__(self):
         self.model_name = "Qwen/Qwen2.5-1.5B-Instruct"
 
+        self.device = 0 if torch.cuda.is_available() else -1
+        self.torch_dtype = torch.float16 if self.device == 0 else torch.float32
+
         self.pipeline = pipeline(
             "text-generation",
             model=self.model_name,
-            torch_dtype=torch.float16,
-            device_map="auto",
+            torch_dtype=self.torch_dtype,
+            device=self.device,
         )
 
     def generate(self, prompt: str) -> str:
