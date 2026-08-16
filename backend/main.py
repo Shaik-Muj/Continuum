@@ -6,6 +6,8 @@ from database import create_db_and_tables
 from routers.auth import router as auth_router
 from routers.memory import router as memory_router
 
+from routers.chat import router as chat_router
+
 app = FastAPI(
     title="Continuum API",
     description="Memory management API",
@@ -20,6 +22,10 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(memory_router)
+
+app.include_router(auth_router)
+app.include_router(memory_router)
+app.include_router(chat_router)
 
 
 @app.get("/")
