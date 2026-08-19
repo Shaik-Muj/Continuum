@@ -1,15 +1,18 @@
-"""Services for generating, storing, and retrieving memory embeddings."""
+"""Services for generating embeddings and performing semantic retrieval."""
 
 from core.embedding import embedding_model
 from core.chromadb import collection
-
 from models import Memory, SearchResult
+
+
+DEFAULT_TOP_K = 5
+DEFAULT_SIMILARITY_THRESHOLD = 0.4
 
 
 def store_embedding(
     memory_id: int,
     user_id: int,
-    text: str
+    text: str,
 ) -> None:
     """
     Generate an embedding for a memory and store it in ChromaDB.
@@ -38,15 +41,19 @@ def store_embedding(
 def find_similar_memories(
     query: str,
     user_id: int,
-    top_k: int = 5
+    top_k: int = DEFAULT_TOP_K,
+    threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> list[SearchResult]:
     """
-    Find the most semantically similar memories for a user.
+    Find semantically similar memories belonging to a specific user.
+
+    Results below the similarity threshold are discarded.
 
     Args:
-        query: User search query.
-        user_id: ID of the user performing the search.
-        top_k: Maximum number of results.
+        query: Search query.
+        user_id: ID of the user.
+        top_k: Maximum number of results to return.
+        threshold: Minimum similarity score required.
 
     Returns:
         Ranked semantic search results.
@@ -62,13 +69,19 @@ def find_similar_memories(
         where={"user_id": user_id},
     )
 
-    search_results = []
+    if not results["ids"]:
+        return []
 
     ids = results["ids"][0]
     distances = results["distances"][0]
 
+    search_results: list[SearchResult] = []
+
     for memory_id, distance in zip(ids, distances):
         score = 1 - distance
+
+        if score < threshold:
+            continue
 
         search_results.append(
             SearchResult(
@@ -80,18 +93,16 @@ def find_similar_memories(
     return search_results
 
 
-def reindex_memories(
-    memories: list[Memory]
-) -> None:
+def reindex_memories(memories: list[Memory]) -> None:
     """
     Rebuild ChromaDB embeddings from PostgreSQL memories.
 
-    This is useful when ChromaDB has been cleared or needs
-    to be rebuilt from the PostgreSQL source of truth.
-
     Args:
-        memories: List of Memory objects from PostgreSQL.
+        memories: Memories retrieved from PostgreSQL.
     """
+
+    if not memories:
+        return
 
     for memory in memories:
         store_embedding(

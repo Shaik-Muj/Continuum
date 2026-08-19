@@ -9,5 +9,6 @@ client = chromadb.PersistentClient(
 
 
 collection = client.get_or_create_collection(
-    name=settings.CHROMA_COLLECTION
+    name=settings.CHROMA_COLLECTION,
+    metadata={"hnsw:space": "cosine"},
 )

@@ -10,7 +10,7 @@ def build_context(
     user_id: int,
     query: str,
     session: Session,
-    top_k: int = 10,
+    top_k: int = 5,
 ) -> ContextPackage:
     """
     Build a portable context package from relevant user memories.
