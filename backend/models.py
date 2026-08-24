@@ -77,10 +77,11 @@ class Token(SQLModel):
 
 
 class SearchResult(BaseModel):
-    """Represents a semantic search result."""
+    """Represents a memory retrieval result."""
 
     memory_id: int
     score: float
+    source: str
 
 
 class ContextPackage(BaseModel):
