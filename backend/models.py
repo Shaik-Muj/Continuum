@@ -81,7 +81,7 @@ class SearchResult(BaseModel):
 
     memory_id: int
     score: float
-    source: str
+    source: str | None = None
 
 
 class ContextPackage(BaseModel):
