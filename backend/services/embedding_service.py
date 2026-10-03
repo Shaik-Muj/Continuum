@@ -38,6 +38,19 @@ def store_embedding(
     )
 
 
+def delete_embedding(memory_id: int) -> None:
+    """
+    Remove a memory's embedding from ChromaDB.
+
+    Args:
+        memory_id: ID of the memory in PostgreSQL.
+    """
+
+    collection.delete(
+        ids=[str(memory_id)],
+    )
+
+
 def find_similar_memories(
     query: str,
     user_id: int,

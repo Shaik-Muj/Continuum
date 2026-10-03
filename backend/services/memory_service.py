@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from models import Memory, MemoryCreate
 from services.embedding_service import (
     store_embedding,
+    delete_embedding,
     find_similar_memories,
 )
 
@@ -180,6 +181,10 @@ def delete_memory(
 
     session.delete(memory)
     session.commit()
+
+    # Remove the derived index entry after the source of truth is updated,
+    # so a failure here leaves only a stale vector that reindexing can fix.
+    delete_embedding(memory_id)
 
     return {
         "message": f"Memory {memory_id} deleted successfully"
