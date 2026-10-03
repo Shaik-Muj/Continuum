@@ -22,9 +22,6 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(memory_router)
-
-app.include_router(auth_router)
-app.include_router(memory_router)
 app.include_router(chat_router)
 
 
