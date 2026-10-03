@@ -59,9 +59,7 @@ def find_similar_memories(
         Ranked semantic search results.
     """
 
-    query_embedding = embedding_model.embed(
-        [query]
-    )[0]
+    query_embedding = embedding_model.embed_query(query)
 
     results = collection.query(
         query_embeddings=[query_embedding],

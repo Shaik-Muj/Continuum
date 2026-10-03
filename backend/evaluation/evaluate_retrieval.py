@@ -44,17 +44,17 @@ from services.rrf_service import DEFAULT_RRF_K, reciprocal_rank_fusion
 
 DEFAULT_DATASET = Path(__file__).with_name("retrieval_dataset.json")
 
-# Query prefix recommended by the BGE v1.5 model card for short queries
-# against passages. Memories are embedded without it.
-BGE_QUERY_INSTRUCTION = "Represent this sentence for searching relevant passages: "
-
 RECALL_CUTOFFS = (1, 3, 5)
-BASELINE_PIPELINE = "bge"
+
+# Pipeline matching services.embedding_service.find_similar_memories.
+# Other pipelines are compared against it, and its scores are the ones
+# the production similarity threshold applies to.
+PRODUCTION_PIPELINE = "bge_instr"
 
 PIPELINES = {
     "bm25": "BM25 over all memories",
-    "bge": "BGE cosine, as used in production today",
-    "bge_instr": "BGE cosine with the BGE query instruction",
+    "bge": "BGE cosine without the query instruction",
+    "bge_instr": "BGE cosine with the query instruction, as used in production",
     "rrf": "RRF over BGE and BM25 candidates",
     "rrf_instr": "RRF over instructed-BGE and BM25 candidates",
     "rrf_rerank": "RRF candidates reordered by the cross-encoder",
@@ -175,9 +175,8 @@ def retrieve(
         top_k=len(memories),
     )
 
-    plain_vector, instructed_vector = embedding_model.embed(
-        [query, BGE_QUERY_INSTRUCTION + query]
-    )
+    plain_vector = embedding_model.embed([query])[0]
+    instructed_vector = embedding_model.embed_query(query)
 
     bge = rank_by_score(memory_ids, memory_vectors @ np.asarray(plain_vector))
     bge_instr = rank_by_score(memory_ids, memory_vectors @ np.asarray(instructed_vector))
@@ -371,7 +370,7 @@ def compare_to_baseline(results: list[dict]) -> dict[str, tuple[int, int]]:
 
         for result in results:
             baseline_rr = reciprocal_rank(
-                ranked_ids(result["rankings"][BASELINE_PIPELINE]), result["relevant"]
+                ranked_ids(result["rankings"][PRODUCTION_PIPELINE]), result["relevant"]
             )
             pipeline_rr = reciprocal_rank(
                 ranked_ids(result["rankings"][pipeline]), result["relevant"]
@@ -457,14 +456,14 @@ def print_report(
     print("\nOverall")
     print(
         format_table(
-            ["pipeline", *(f"R@{k}" for k in RECALL_CUTOFFS), "MRR", f"vs {BASELINE_PIPELINE}"],
+            ["pipeline", *(f"R@{k}" for k in RECALL_CUTOFFS), "MRR", f"vs {PRODUCTION_PIPELINE}"],
             [
                 [
                     pipeline,
                     *(f"{metrics[f'recall@{k}']:.3f}" for k in RECALL_CUTOFFS),
                     f"{metrics['mrr']:.3f}",
                     "baseline"
-                    if pipeline == BASELINE_PIPELINE
+                    if pipeline == PRODUCTION_PIPELINE
                     else f"+{comparison[pipeline][0]} / -{comparison[pipeline][1]}",
                 ]
                 for pipeline, metrics in summary.items()
@@ -476,7 +475,7 @@ def print_report(
         "R@3 can be lower than R@1 on multi-memory queries."
     )
     print(
-        f"'vs {BASELINE_PIPELINE}' counts queries where the first relevant memory "
+        f"'vs {PRODUCTION_PIPELINE}' counts queries where the first relevant memory "
         "ranked higher (+) or lower (-) than in the baseline."
     )
 
@@ -544,22 +543,22 @@ def print_report(
         "calibrated probabilities."
     )
 
-    relevant_bge_scores = [
+    relevant_scores = [
         result.score
         for query in answerable
-        for result in query["rankings"]["bge"]
+        for result in query["rankings"][PRODUCTION_PIPELINE]
         if result.memory_id in query["relevant"]
     ]
-    kept = sum(score >= args.threshold for score in relevant_bge_scores)
+    kept = sum(score >= args.threshold for score in relevant_scores)
     leaked = sum(
-        query["rankings"]["bge"][0].score >= args.threshold
+        query["rankings"][PRODUCTION_PIPELINE][0].score >= args.threshold
         for query in no_answer
     )
 
     print(
-        f"BGE threshold {args.threshold}: keeps {kept}/{len(relevant_bge_scores)} "
-        f"relevant memories; {leaked}/{len(no_answer)} no-answer queries still "
-        "return a memory."
+        f"Threshold {args.threshold} on {PRODUCTION_PIPELINE}: keeps "
+        f"{kept}/{len(relevant_scores)} relevant memories; "
+        f"{leaked}/{len(no_answer)} no-answer queries still return a memory."
     )
 
     if args.per_query:
